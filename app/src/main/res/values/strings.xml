@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Vidya\'s Map</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="google_maps_key">AIzaSyDa4Y6JT7ZEfziGbio-lTuatxNioJphJ88</string>
+</resources>
