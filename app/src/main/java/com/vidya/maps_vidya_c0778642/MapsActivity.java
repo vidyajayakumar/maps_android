@@ -1,8 +1,13 @@
 package com.vidya.maps_vidya_c0778642;
 
+import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,7 +24,11 @@ import com.google.android.gms.maps.model.Dot;
 import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
+import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
+import com.google.android.gms.maps.GoogleMap.OnPolygonClickListener;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PatternItem;
 import com.google.android.gms.maps.model.Polygon;
@@ -28,27 +37,34 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.RoundCap;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnPolygonClickListener {
-
+public
+class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
+        GoogleMap.OnInfoWindowClickListener,
+        GoogleMap.OnMarkerDragListener,
+        GoogleMap.OnInfoWindowCloseListener, OnMarkerClickListener, OnMapClickListener, OnMapLongClickListener, OnPolygonClickListener {
+    private static final String TAG = "MapsActivity";
     private GoogleMap googleMap;
 
-    // location with location manager and listener
-    LocationManager locationManager;
-    LocationListener locationListener;
+    private ArrayList<LatLng> latLngs;
 
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected
+    void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        latLngs = new ArrayList<>();
+
     }
 
     /**
@@ -61,7 +77,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      * installed Google Play services and returned to the app.
      */
     @Override
-    public void onMapReady(GoogleMap map) {
+    public
+    void onMapReady(GoogleMap map) {
         googleMap = map;
 
         // Add a marker in Sydney and move the camera
@@ -69,57 +86,46 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         map.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         map.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
-        markQuadrilateral();
-
-
         // Set listeners for click events.
 //        googleMap.setOnPolylineClickListener(this);
         googleMap.setOnPolygonClickListener(this);
+        googleMap.setOnMapClickListener(this);
+        googleMap.setOnMapLongClickListener(this);
+        googleMap.setOnMarkerDragListener(this);
 
     }
 
     // [maps_poly_activity_on_map_ready]
-    private void markQuadrilateral(){
+    Polygon polygon;
 
-        // Add polylines to the map.
-        // Polylines are useful to show a route or some other connection between points.
-        // [START maps_poly_activity_add_polyline_set_tag]
-        // [START maps_poly_activity_add_polyline]
-        Polyline polyline1 = googleMap.addPolyline(new PolylineOptions()
-                                                           .clickable(true)
-                                                           .add(
-                                                                   new LatLng(-35.016, 143.321),
-                                                                   new LatLng(-34.747, 145.592),
-                                                                   new LatLng(-34.364, 147.891),
-                                                                   new LatLng(-33.501, 150.217),
-                                                                   new LatLng(-32.306, 149.248),
-                                                                   new LatLng(-32.491, 147.309)));
-        // [END maps_poly_activity_add_polyline]
-        // [START_EXCLUDE silent]
-        // Store a data object with the polyline, used here to indicate an arbitrary type.
-        polyline1.setTag("A");
-        // [END maps_poly_activity_add_polyline_set_tag]
-        // Style the polyline.
-        stylePolyline(polyline1);
-
+    private
+    void markQuadrilateral() {
         // [START maps_poly_activity_add_polygon]
         // Add polygons to indicate areas on the map.
-        Polygon polygon1 = googleMap.addPolygon(new PolygonOptions()
-                                                        .clickable(true)
-                                                        .add(
-                                                                new LatLng(-27.457, 153.040),
-                                                                new LatLng(-33.852, 151.211),
-                                                                new LatLng(-37.813, 144.962),
-                                                                new LatLng(-34.928, 138.599)));
-        // Store a data object with the polygon, used here to indicate an arbitrary type.
-        polygon1.setTag("alpha");
-        // [END maps_poly_activity_add_polygon]
-        // Style the polygon.
-        stylePolygon(polygon1);
 
-        // Position the map's camera near Alice Springs in the center of Australia,
-        // and set the zoom factor so most of Australia shows on the screen.
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-23.684, 133.903), 4));
+        if (latLngs.size() == 4) {
+//            polygon.remove();
+
+            polygon = googleMap.addPolygon(new PolygonOptions()
+                                                   .clickable(true)
+                                                   .fillColor(3)
+                                                   .add(new LatLng(latLngs.get(0).latitude, latLngs.get(0).longitude),
+                                                        new LatLng(latLngs.get(1).latitude, latLngs.get(1).longitude),
+                                                        new LatLng(latLngs.get(2).latitude, latLngs.get(2).longitude),
+                                                        new LatLng(latLngs.get(3).latitude, latLngs.get(3).longitude)));
+
+            // Store a data object with the polygon, used here to indicate an arbitrary type.
+            polygon.setTag("alpha");
+            // [END maps_poly_activity_add_polygon]
+
+            // Style the polygon.
+            stylePolygon(polygon);
+            distance();
+
+            // Position the map's camera near Alice Springs in the center of Australia,
+            // and set the zoom factor so most of Australia shows on the screen.
+//    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-28, 100), 4));
+        }
 
     }
     // [END maps_poly_activity_on_map_ready]
@@ -165,7 +171,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     // [END maps_poly_activity_style_polyline]
 
     // [START maps_poly_activity_on_polyline_click]
-    private static final int PATTERN_GAP_LENGTH_PX = 20;
+    private static final int PATTERN_GAP_LENGTH_PX = 15;
     private static final PatternItem DOT = new Dot();
     private static final PatternItem GAP = new Gap(PATTERN_GAP_LENGTH_PX);
 
@@ -206,27 +212,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         polygon.setStrokeColor(color);
         color = polygon.getFillColor() ^ 0x00ffffff;
         polygon.setFillColor(color);
-
-        Toast.makeText(this, "Area type " + polygon.getTag().toString(), Toast.LENGTH_SHORT).show();
     }
 
-    // [START maps_poly_activity_style_polygon]
     private static final int COLOR_WHITE_ARGB = 0xffffffff;
-    private static final int COLOR_GREEN_ARGB = 0xff388E3C;
-    private static final int COLOR_PURPLE_ARGB = 0xff81C784;
-    private static final int COLOR_ORANGE_ARGB = 0xffF57F17;
-    private static final int COLOR_BLUE_ARGB = 0xffF9A825;
-
-    private static final int POLYGON_STROKE_WIDTH_PX = 8;
-    private static final int PATTERN_DASH_LENGTH_PX = 20;
-    private static final PatternItem DASH = new Dash(PATTERN_DASH_LENGTH_PX);
-
-    // Create a stroke pattern of a gap followed by a dash.
-    private static final List<PatternItem> PATTERN_POLYGON_ALPHA = Arrays.asList(GAP, DASH);
-
-    // Create a stroke pattern of a dot followed by a gap, a dash, and another gap.
-    private static final List<PatternItem> PATTERN_POLYGON_BETA =
-            Arrays.asList(DOT, GAP, DASH, GAP);
 
     /**
      * Styles the polygon, based on type.
@@ -235,40 +223,185 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     private
     void stylePolygon(Polygon polygon) {
-        String type = "";
-        // Get the data object stored with the polygon.
-        if (polygon.getTag() != null) {
-            type = polygon.getTag().toString();
+
+        int strokeColor = 0xfff00000; //red
+        int fillColor   = 0xff81C784;
+
+        polygon.setStrokePattern(null);
+        polygon.setStrokeWidth(8);
+        polygon.setStrokeColor(Color.RED);
+        polygon.setFillColor(0x5900FF00);
+    }
+
+
+    double dist[] = {0, 0, 0, 0};
+
+    private
+    void distance() {
+        dist = null;
+//        ArrayList<double> dist = new ArrayList<>();
+        for (int i = 0; i < latLngs.size()-1;i++) {
+            double lon1  = latLngs.get(i).longitude;
+            double lon2  = latLngs.get(i+1).longitude;
+            double lat1  = latLngs.get(i).latitude;
+            double lat2  = latLngs.get(i+1).latitude;
+            double theta = lon1 - lon2;
+            double temp = Math.sin(deg2rad(lat1))
+                    * Math.sin(deg2rad(lat2))
+                    + Math.cos(deg2rad(lat1))
+                    * Math.cos(deg2rad(lat2))
+                    * Math.cos(deg2rad(theta));
+            temp    = Math.acos(temp);
+            temp    = rad2deg(temp);
+            temp    = temp * 60 * 1.1515;
+            dist[i] = temp;
+            System.out.printf("distance%s%n", temp);
+            Log.i(TAG, "distance: " + temp);
+
         }
+        Log.i(TAG, "distance: " + dist);
+//        return dist;
+    }
 
-        List<PatternItem> pattern     = null;
-        int               strokeColor = COLOR_BLACK_ARGB;
-        int               fillColor   = COLOR_WHITE_ARGB;
+    private
+    double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
+    }
 
-        switch (type) {
-            // If no type is given, allow the API to use the default.
-            case "alpha":
-                // Apply a stroke pattern to render a dashed line, and define colors.
-                pattern = PATTERN_POLYGON_ALPHA;
-                strokeColor = COLOR_GREEN_ARGB;
-                fillColor = COLOR_PURPLE_ARGB;
-                break;
-            case "beta":
-                // Apply a stroke pattern to render a line of dots and dashes, and define colors.
-                pattern = PATTERN_POLYGON_BETA;
-                strokeColor = COLOR_ORANGE_ARGB;
-                fillColor = COLOR_BLUE_ARGB;
-                break;
+    private
+    double rad2deg(double rad) {
+        return (rad * 180.0 / Math.PI);
+    }
+
+    @Override
+    public
+    void onMapClick(LatLng latLng) {
+
+    }
+
+    @Override
+    public
+    void onMapLongClick(LatLng latLng) {
+        if (latLngs.size() < 4) {
+            latLngs.add(latLng);
+            LatLng mlat = latLng;
+            markLocation(latLng);
+        } else {
+            googleMap.clear();
+            latLngs.clear();
         }
+    }
 
-        polygon.setStrokePattern(pattern);
-        polygon.setStrokeWidth(POLYGON_STROKE_WIDTH_PX);
-        polygon.setStrokeColor(strokeColor);
-        polygon.setFillColor(fillColor);
+    private
+    void markLocation(LatLng latLng) {
+
+        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+
+        try {
+            List<Address> listAddresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            Log.i(TAG, "onMapLongClick: " + listAddresses.get(0).toString());
+
+
+            if (listAddresses != null && listAddresses.size() > 0) {
+                String address = "";
+                String title   = "";
+                String snippet = "";
+
+
+                if (listAddresses.get(0).getThoroughfare() != null) {
+                    address += listAddresses.get(0).getThoroughfare() + " ";
+                    title += listAddresses.get(0).getThoroughfare() + " ";
+                }
+                if (listAddresses.get(0).getSubThoroughfare() != null) {
+                    address += listAddresses.get(0).getSubThoroughfare() + " ";
+                    title += listAddresses.get(0).getSubThoroughfare() + " ";
+                }
+
+                if (listAddresses.get(0).getLocality() != null) {
+                    address += listAddresses.get(0).getLocality() + " ";
+                    snippet += listAddresses.get(0).getLocality() + " ";
+                }
+
+                if (listAddresses.get(0).getPostalCode() != null) {
+                    address += listAddresses.get(0).getPostalCode() + " ";
+                    title += listAddresses.get(0).getPostalCode();
+                }
+
+                if (listAddresses.get(0).getAdminArea() != null) {
+                    address += listAddresses.get(0).getAdminArea();
+                    snippet += listAddresses.get(0).getAdminArea();
+                }
+
+                Toast.makeText(MapsActivity.this, address, Toast.LENGTH_SHORT).show();
+                Log.i("Address", address);
+
+
+                Marker m1 = googleMap.addMarker(new MarkerOptions()
+                                                        .position(latLng)
+                                                        .title(title)
+                                                        .snippet(snippet)
+                                                        .draggable(true));
+                markQuadrilateral();
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public
+    boolean onMarkerClick(Marker marker) {
+        return false;
+    }
+
+    @Override
+    public
+    void onInfoWindowClick(Marker marker) {
+
+    }
+
+    @Override
+    public
+    void onInfoWindowClose(Marker marker) {
+
+    }
+
+    LatLng tempLat;
+    int position;
+
+    @Override
+    public
+    void onMarkerDragStart(Marker marker) {
+        Log.i(TAG, "onMarkerDragStart: " + marker);
+
+        tempLat = marker.getPosition();
+        //        position = -1;
+        for (int i = 0; i < latLngs.size(); i++) {
+            if (latLngs.get(i) == tempLat) {
+                position = i;
+                polygon.remove();
+                break;  // uncomment to get the first instance
+            }
+        }
+    }
+
+    @Override
+    public
+    void onMarkerDrag(Marker marker) {
+    }
+
+    @Override
+    public
+    void onMarkerDragEnd(Marker marker) {
+        Log.i(TAG, "onMarkerDragEnd: " + marker);
+        latLngs.set(position, marker.getPosition());
+        markLocation(marker.getPosition());
+
+        markQuadrilateral();
+
     }
     // [END maps_poly_activity_style_polygon]
-
-
 
 
 }
