@@ -197,12 +197,8 @@ class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
 
     public
     LatLng midPoint(double lat1, double lon1, double lat2, double lon2) {
-
-        double dLon = Math.toRadians(lon2 - lon1);
-        double Bx   = Math.cos(lat2) * Math.cos(dLon);
-        double By   = Math.cos(lat2) * Math.sin(dLon);
-        double lat3 = Math.atan2(Math.sin(lat1) + Math.sin(lat2), Math.sqrt((Math.cos(lat1) + Bx) * (Math.cos(lat1) + Bx) + By * By));
-        double lon3 = lon1 + Math.atan2(By, Math.cos(lat1) + Bx);
+       double lat3 = (lat1+lat2)/2;
+        double lon3 = (lon1+lon2)/2;
         return new LatLng(lat3, lon3);
     }
 
@@ -250,7 +246,7 @@ class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
                                                .position(latLng)
                                                .title(text)
                                                .icon(transparent)
-                                               .anchor((float) 0.5, (float) 0.5)
+//                                               .anchor(0f, 0.5f)
                                                .visible(true)
                                                .draggable(false));
         m.showInfoWindow();
@@ -416,7 +412,7 @@ class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
     public
     boolean onMarkerClick(Marker marker) {
         Log.i(TAG, "onMarkerClick: markerPosition " + marker.getPosition());
-        customToast("TAG: " + marker.getTag().toString());
+//        customToast("TAG: " + marker.getTag().toString());
 
         if (marker.equals(mSelectedMarker)) {
             mSelectedMarker = null;
