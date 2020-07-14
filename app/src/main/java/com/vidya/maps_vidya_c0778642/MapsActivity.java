@@ -139,9 +139,8 @@ class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
         //        googleMap.setMyLocationEnabled(true);
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(44, -80);
-        map.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney, 5));
+        LatLng zoom = new LatLng(40, -90);
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(zoom, 3));
 
 
         // Set listeners for click events.
@@ -215,25 +214,29 @@ class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
         } else {
             polyline.setPattern(null);
         }
-        LatLng midpoint = midPoint(polyline.getPoints().get(0).latitude,
-                                   polyline.getPoints().get(0).longitude,
-                                   polyline.getPoints().get(1).latitude,
-                                   polyline.getPoints().get(1).longitude);
 
-        Log.i(TAG, "onPolylineClick: " + polyline.getPoints().get(0).latitude + " " +
-                polyline.getPoints().get(0).longitude + " " +
-                polyline.getPoints().get(1).latitude + " " +
-                polyline.getPoints().get(1).longitude + " " + midpoint);
 
         if ("A".equals(polyline.getTag().toString())) {
 //            customToast("distance between A and B: " + distance(latLngs.get(0), latLngs.get(1)) + " Km");
-            markMidPoint(midpoint, "distance between A and B: " + distance(latLngs.get(0), latLngs.get(1)) + " Km");
+            markMidPoint(midPoint(latLngs.get(0).latitude,
+                                  latLngs.get(0).longitude,
+                                  latLngs.get(1).latitude,
+                                  latLngs.get(1).longitude), "distance between A and B: " + distance(latLngs.get(0), latLngs.get(1)) + " Km");
         } else if ("B".equals(polyline.getTag().toString())) {
-            markMidPoint(midpoint, "distance between B and C: " + distance(latLngs.get(1), latLngs.get(2)) + " Km");
+            markMidPoint(midPoint(latLngs.get(1).latitude,
+                                  latLngs.get(1).longitude,
+                                  latLngs.get(2).latitude,
+                                  latLngs.get(2).longitude), "distance between B and C: " + distance(latLngs.get(1), latLngs.get(2)) + " Km");
         } else if ("C".equals(polyline.getTag().toString())) {
-            markMidPoint(midpoint, "distance between C and D: " + distance(latLngs.get(2), latLngs.get(3)) + " Km");
+            markMidPoint(midPoint(latLngs.get(2).latitude,
+                                  latLngs.get(2).longitude,
+                                  latLngs.get(3).latitude,
+                                  latLngs.get(3).longitude), "distance between C and D: " + distance(latLngs.get(2), latLngs.get(3)) + " Km");
         } else if ("D".equals(polyline.getTag().toString())) {
-            markMidPoint(midpoint, "distance between D and A: " + distance(latLngs.get(3), latLngs.get(0)) + " Km");
+            markMidPoint(midPoint(latLngs.get(3).latitude,
+                                  latLngs.get(3).longitude,
+                                  latLngs.get(0).latitude,
+                                  latLngs.get(0).longitude), "distance between D and A: " + distance(latLngs.get(3), latLngs.get(0)) + " Km");
         }
 
 //        customToast("Route type " + polyline.getTag().toString());
@@ -243,7 +246,7 @@ class MapsActivity extends AppCompatActivity implements OnMapReadyCallback,
     void markMidPoint(LatLng latLng, String text) {
 
         BitmapDescriptor transparent = BitmapDescriptorFactory.fromResource(R.drawable.scale);
-        Marker m = googleMap.addMarker(new MarkerOptions()
+        Marker m = this.googleMap.addMarker(new MarkerOptions()
                                                .position(latLng)
                                                .title(text)
                                                .icon(transparent)
